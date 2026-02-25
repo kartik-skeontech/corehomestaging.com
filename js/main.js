@@ -219,6 +219,57 @@
     updateSlider(50);
   });
 
+  // Expose slider re-init for CMS dynamic content
+  window._reinitSliders = function () {
+    document.querySelectorAll('[data-slider]').forEach(function (slider) {
+      if (slider._sliderInit) return;
+      slider._sliderInit = true;
+
+      var handle = slider.querySelector('.ba-handle');
+      var isDragging = false;
+
+      function getPos(clientX) {
+        var rect = slider.getBoundingClientRect();
+        var pos = ((clientX - rect.left) / rect.width) * 100;
+        return Math.max(0, Math.min(100, pos));
+      }
+      function setPos(pos) {
+        slider.style.setProperty('--slider-position', pos + '%');
+        if (handle) handle.setAttribute('aria-valuenow', Math.round(pos));
+      }
+      slider.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('.ba-handle') || e.target === slider) {
+          isDragging = true;
+          slider.setPointerCapture(e.pointerId);
+          setPos(getPos(e.clientX));
+          e.preventDefault();
+        }
+      });
+      slider.addEventListener('pointermove', function (e) {
+        if (!isDragging) return;
+        setPos(getPos(e.clientX));
+        e.preventDefault();
+      });
+      slider.addEventListener('pointerup', function () { isDragging = false; });
+      slider.addEventListener('pointercancel', function () { isDragging = false; });
+      if (handle) {
+        handle.addEventListener('keydown', function (e) {
+          var cur = parseFloat(slider.style.getPropertyValue('--slider-position')) || 50;
+          var val = cur;
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { val = Math.max(0, cur - 2); e.preventDefault(); }
+          else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { val = Math.min(100, cur + 2); e.preventDefault(); }
+          else if (e.key === 'Home') { val = 0; e.preventDefault(); }
+          else if (e.key === 'End') { val = 100; e.preventDefault(); }
+          setPos(val);
+        });
+      }
+      setPos(50);
+    });
+  };
+
+  // Mark existing sliders as initialized
+  sliders.forEach(function (s) { s._sliderInit = true; });
+
   // ==========================================================================
   // Counter Animation
   // ==========================================================================
@@ -276,6 +327,15 @@
   document.querySelectorAll('.stat-number, .result-number').forEach(function (el) {
     counterObserver.observe(el);
   });
+
+  // Expose re-observe hook for CMS dynamic content
+  window._reobserveCounters = function () {
+    document.querySelectorAll('.stat-number, .result-number').forEach(function (el) {
+      if (!el.classList.contains('counted')) {
+        counterObserver.observe(el);
+      }
+    });
+  };
 
   // ==========================================================================
   // Scroll Reveal Animation
@@ -343,6 +403,34 @@
       });
     });
   }
+
+  // Expose testimonial dots re-init for CMS dynamic content
+  window._reinitTestimonialDots = function () {
+    var grid = document.querySelector('.testimonials-grid');
+    var newDots = document.querySelectorAll('.testimonial-dot');
+    if (!grid || !newDots.length) return;
+
+    grid.addEventListener('scroll', function () {
+      var scrollLeft = grid.scrollLeft;
+      var firstCard = grid.querySelector('.testimonial-card');
+      if (!firstCard) return;
+      var cardWidth = firstCard.offsetWidth;
+      var gap = 16;
+      var index = Math.round(scrollLeft / (cardWidth + gap));
+      newDots.forEach(function (dot, i) {
+        dot.classList.toggle('active', i === index);
+      });
+    });
+
+    newDots.forEach(function (dot, i) {
+      dot.addEventListener('click', function () {
+        var card = grid.querySelectorAll('.testimonial-card')[i];
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      });
+    });
+  };
 
   // ==========================================================================
   // FAQ Accordion Animation
