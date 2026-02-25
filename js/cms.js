@@ -20,7 +20,7 @@
   // ========================================================================
 
   var QUERY = '{\n' +
-    '  heroSection(where: {id_not: ""}, first: 1, stage: PUBLISHED) {\n' +
+    '  heroSections(first: 1, stage: PUBLISHED) {\n' +
     '    heading\n' +
     '    subtitle\n' +
     '    primaryCtaText\n' +
@@ -37,7 +37,7 @@
     '    prefix\n' +
     '    label\n' +
     '  }\n' +
-    '  whyStagingSection(where: {id_not: ""}, first: 1, stage: PUBLISHED) {\n' +
+    '  whyStagingSections(first: 1, stage: PUBLISHED) {\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '    paragraphs\n' +
@@ -64,16 +64,16 @@
     '      url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}})\n' +
     '    }\n' +
     '  }\n' +
-    '  resultsSection(where: {id_not: ""}, first: 1, stage: PUBLISHED) {\n' +
+    '  resultsSections(first: 1, stage: PUBLISHED) {\n' +
     '    eyebrow\n' +
     '    heading\n' +
-    '    stats {\n' +
-    '      value\n' +
-    '      suffix\n' +
-    '      prefix\n' +
-    '      label\n' +
-    '      description\n' +
-    '    }\n' +
+    '  }\n' +
+    '  resultStats(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    value\n' +
+    '    suffix\n' +
+    '    prefix\n' +
+    '    label\n' +
+    '    description\n' +
     '  }\n' +
     '  howItWorksSteps(stage: PUBLISHED, orderBy: order_ASC) {\n' +
     '    title\n' +
@@ -85,7 +85,7 @@
     '    authorRole\n' +
     '    stars\n' +
     '  }\n' +
-    '  aboutSection(where: {id_not: ""}, first: 1, stage: PUBLISHED) {\n' +
+    '  aboutSections(first: 1, stage: PUBLISHED) {\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '    paragraphs\n' +
@@ -102,7 +102,7 @@
     '    question\n' +
     '    answer\n' +
     '  }\n' +
-    '  contactInfo(where: {id_not: ""}, first: 1, stage: PUBLISHED) {\n' +
+    '  contactInfos(first: 1, stage: PUBLISHED) {\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '    description\n' +
@@ -113,7 +113,7 @@
     '    facebookUrl\n' +
     '    pinterestUrl\n' +
     '  }\n' +
-    '  siteSettings(where: {id_not: ""}, first: 1, stage: PUBLISHED) {\n' +
+    '  siteSettingsEntries(first: 1, stage: PUBLISHED) {\n' +
     '    siteName\n' +
     '    tagline\n' +
     '    footerDescription\n' +
@@ -654,19 +654,19 @@
     if (!data) return;
 
     try {
-      if (data.heroSection) hydrateHero(data.heroSection);
+      if (data.heroSections) hydrateHero(data.heroSections);
       if (data.socialProofStats) hydrateSocialProof(data.socialProofStats);
-      if (data.whyStagingSection) hydrateWhyStaging(data.whyStagingSection);
+      if (data.whyStagingSections) hydrateWhyStaging(data.whyStagingSections);
       if (data.services) hydrateServices(data.services);
       if (data.portfolioItems) hydratePortfolio(data.portfolioItems);
-      if (data.resultsSection) hydrateResults(data.resultsSection);
+      if (data.resultsSections) hydrateResults(Object.assign({}, data.resultsSections[0], { stats: data.resultStats }));
       if (data.howItWorksSteps) hydrateHowItWorks(data.howItWorksSteps);
       if (data.testimonials) hydrateTestimonials(data.testimonials);
-      if (data.aboutSection) hydrateAbout(data.aboutSection);
+      if (data.aboutSections) hydrateAbout(data.aboutSections);
       if (data.serviceAreas) hydrateServiceAreas(data.serviceAreas);
       if (data.faqs) hydrateFAQs(data.faqs);
-      if (data.contactInfo) hydrateContact(data.contactInfo);
-      if (data.siteSettings) hydrateSiteSettings(data.siteSettings);
+      if (data.contactInfos) hydrateContact(data.contactInfos);
+      if (data.siteSettingsEntries) hydrateSiteSettings(data.siteSettingsEntries);
     } catch (err) {
       console.warn('CMS hydration error:', err);
     }
