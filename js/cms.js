@@ -125,7 +125,21 @@
   // Fetch from Hygraph
   // ========================================================================
 
+  var CACHE_KEY = 'cms_cache_v1';
+  var CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
   function fetchCMS() {
+    // Serve from localStorage cache if still fresh
+    try {
+      var cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        var entry = JSON.parse(cached);
+        if (Date.now() - entry.ts < CACHE_TTL) {
+          return Promise.resolve(entry.data);
+        }
+      }
+    } catch (e) {}
+
     return fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,6 +154,9 @@
           console.warn('Hygraph query errors:', json.errors);
           return null;
         }
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: json.data }));
+        } catch (e) {}
         return json.data;
       })
       .catch(function (err) {
