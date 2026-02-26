@@ -128,7 +128,7 @@
   var CACHE_KEY = 'cms_cache_v1';
   var CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-  function fetchCMS() {
+  function fetchFromAPI() {
     // Serve from localStorage cache if still fresh
     try {
       var cached = localStorage.getItem(CACHE_KEY);
@@ -162,6 +162,19 @@
       .catch(function (err) {
         console.warn('CMS not available, using static content:', err.message);
         return null;
+      });
+  }
+
+  function fetchCMS() {
+    // In deployed builds, cms-data.json is generated at build time — use it
+    // to avoid any runtime API calls. Falls back to live API in local dev.
+    return fetch('/cms-data.json')
+      .then(function (res) {
+        if (!res.ok) throw new Error('no build data');
+        return res.json();
+      })
+      .catch(function () {
+        return fetchFromAPI();
       });
   }
 

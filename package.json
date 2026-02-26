@@ -1,0 +1,10 @@
+{
+  "name": "corehomestaging",
+  "private": true,
+  "scripts": {
+    "build": "node hygraph/build.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
