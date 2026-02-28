@@ -1,5 +1,6 @@
 # Generated at build time — do not commit
 cms-data.json
+dist/
 
 # Dependencies
 node_modules/
