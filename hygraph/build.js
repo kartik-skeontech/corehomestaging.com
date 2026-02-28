@@ -118,19 +118,34 @@ const QUERY = `{
   }
 }`;
 
+async function fetchWithRetry(retries = 5, delay = 5000) {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: QUERY }),
+    });
+
+    if (res.status === 429) {
+      const wait = delay * (i + 1);
+      console.log(`Rate limited (429). Retrying in ${wait / 1000}s... (attempt ${i + 1}/${retries})`);
+      await new Promise(r => setTimeout(r, wait));
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error('Hygraph request failed: ' + res.status + ' ' + res.statusText);
+    }
+
+    return res;
+  }
+  throw new Error('Hygraph rate limit persisted after ' + retries + ' retries');
+}
+
 async function build() {
   console.log('Fetching content from Hygraph...');
 
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: QUERY }),
-  });
-
-  if (!res.ok) {
-    throw new Error('Hygraph request failed: ' + res.status + ' ' + res.statusText);
-  }
-
+  const res = await fetchWithRetry();
   const json = await res.json();
 
   if (json.errors) {
