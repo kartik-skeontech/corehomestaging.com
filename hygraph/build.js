@@ -106,6 +106,31 @@ async function build() {
 
   fs.writeFileSync(OUTPUT, JSON.stringify(data, null, 2));
   console.log('cms-data.json written (' + Object.keys(data).length + ' collections)');
+
+  // Copy web files into dist/ for Cloudflare Workers deployment
+  const root = path.join(__dirname, '..');
+  const dist = path.join(root, 'dist');
+  if (!fs.existsSync(dist)) fs.mkdirSync(dist);
+
+  const webAssets = ['index.html', 'css', 'js', 'images', 'fonts', 'robots.txt', 'sitemap.xml', '_headers', 'cms-data.json'];
+  for (const item of webAssets) {
+    const src = path.join(root, item);
+    if (!fs.existsSync(src)) continue;
+    cpSync(src, path.join(dist, item));
+  }
+  console.log('dist/ populated with web assets');
+}
+
+function cpSync(src, dest) {
+  const stat = fs.statSync(src);
+  if (stat.isDirectory()) {
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    for (const child of fs.readdirSync(src)) {
+      cpSync(path.join(src, child), path.join(dest, child));
+    }
+  } else {
+    fs.copyFileSync(src, dest);
+  }
 }
 
 build().catch(function (err) {
