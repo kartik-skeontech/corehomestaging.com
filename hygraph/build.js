@@ -118,7 +118,7 @@ const QUERY = `{
   }
 }`;
 
-async function fetchWithRetry(retries = 5, delay = 5000) {
+async function fetchWithRetry(retries = 6, baseDelay = 30000) {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -127,7 +127,8 @@ async function fetchWithRetry(retries = 5, delay = 5000) {
     });
 
     if (res.status === 429) {
-      const wait = delay * (i + 1);
+      if (i === retries - 1) break;
+      const wait = baseDelay * (i + 1);
       console.log(`Rate limited (429). Retrying in ${wait / 1000}s... (attempt ${i + 1}/${retries})`);
       await new Promise(r => setTimeout(r, wait));
       continue;
