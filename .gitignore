@@ -1,5 +1,8 @@
 # Generated at build time — do not commit
 cms-data.json
 
+# Dependencies
+node_modules/
+
 # OS
 .DS_Store
