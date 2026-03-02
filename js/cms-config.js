@@ -7,7 +7,12 @@
  * Find it in: Hygraph Dashboard > Project Settings > API Access > Content API
  */
 var CMS_CONFIG = {
+  // Public CDN endpoint — used for published content (visitors + builds)
   endpoint: 'https://us-west-2.cdn.hygraph.com/content/cmlnbszzu03lj07w926r5z5fl/master',
+
+  // Regular API endpoint — used for DRAFT content in preview mode.
+  // The CDN endpoint only serves PUBLISHED; DRAFT queries need the regular API.
+  previewEndpoint: 'https://api-us-west-2.hygraph.com/v2/cmlnbszzu03lj07w926r5z5fl/master',
 
   // Permanent Auth Token with DRAFT stage access (for preview mode).
   // Create in: Hygraph > Project Settings > Access > Permanent Auth Tokens

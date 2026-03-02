@@ -13,9 +13,9 @@
     return;
   }
 
-  var endpoint = CMS_CONFIG.endpoint;
   var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
                   window.self !== window.top;
+  var endpoint = (isPreview && CMS_CONFIG.previewEndpoint) || CMS_CONFIG.endpoint;
 
   // ========================================================================
   // GraphQL Query - fetches all page content in a single request
