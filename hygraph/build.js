@@ -17,54 +17,55 @@ const path = require('path');
 const ENDPOINT = 'https://us-west-2.cdn.hygraph.com/content/cmlnbszzu03lj07w926r5z5fl/master';
 const OUTPUT = path.join(__dirname, '..', 'cms-data.json');
 
+// SYNC: When changing fields, update BOTH js/cms.js and hygraph/build.js
 // Split into small queries — each gets cached independently by Hygraph's CDN
 const QUERIES = [
   `{
     heroSections(first: 1, stage: PUBLISHED) {
-      heading subtitle primaryCtaText primaryCtaLink secondaryCtaText secondaryCtaLink
+      id heading subtitle primaryCtaText primaryCtaLink secondaryCtaText secondaryCtaLink
       backgroundImage { url(transformation: {image: {resize: {width: 1920, height: 1080, fit: crop}}}) }
     }
     socialProofStats(stage: PUBLISHED, orderBy: order_ASC) {
-      value suffix prefix label
+      id value suffix prefix label
     }
   }`,
   `{
     whyStagingSections(first: 1, stage: PUBLISHED) {
-      eyebrow heading paragraphs bulletPoints ctaText ctaLink
+      id eyebrow heading paragraphs bulletPoints ctaText ctaLink
       image { url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}}) }
     }
     services(stage: PUBLISHED, orderBy: order_ASC) {
-      title description
+      id title description
       image { url(transformation: {image: {resize: {width: 600, height: 400, fit: crop}}}) }
     }
   }`,
   `{
     portfolioItems(stage: PUBLISHED, orderBy: order_ASC) {
-      label
+      id label
       beforeImage { url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}}) }
       afterImage { url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}}) }
     }
-    resultsSections(first: 1, stage: PUBLISHED) { eyebrow heading }
-    resultStats(stage: PUBLISHED, orderBy: order_ASC) { value suffix prefix label description }
+    resultsSections(first: 1, stage: PUBLISHED) { id eyebrow heading }
+    resultStats(stage: PUBLISHED, orderBy: order_ASC) { id value suffix prefix label description }
   }`,
   `{
-    howItWorksSteps(stage: PUBLISHED, orderBy: order_ASC) { title description }
-    testimonials(stage: PUBLISHED, orderBy: order_ASC) { quote authorName authorRole stars }
+    howItWorksSteps(stage: PUBLISHED, orderBy: order_ASC) { id title description }
+    testimonials(stage: PUBLISHED, orderBy: order_ASC) { id quote authorName authorRole stars }
   }`,
   `{
     aboutSections(first: 1, stage: PUBLISHED) {
-      eyebrow heading paragraphs credentials
+      id eyebrow heading paragraphs credentials
       image { url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}}) }
     }
-    serviceAreas(stage: PUBLISHED, orderBy: order_ASC) { region areas }
+    serviceAreas(stage: PUBLISHED, orderBy: order_ASC) { id region areas }
   }`,
   `{
-    faqs(stage: PUBLISHED, orderBy: order_ASC) { question answer }
+    faqs(stage: PUBLISHED, orderBy: order_ASC) { id question answer }
     contactInfos(first: 1, stage: PUBLISHED) {
-      eyebrow heading description phone email address instagramUrl facebookUrl pinterestUrl
+      id eyebrow heading description phone email address instagramUrl facebookUrl pinterestUrl
     }
     siteSettingsEntries(first: 1, stage: PUBLISHED) {
-      siteName tagline footerDescription formResponseNote
+      id siteName tagline footerDescription formResponseNote
     }
   }`,
 ];

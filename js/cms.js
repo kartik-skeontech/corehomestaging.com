@@ -17,10 +17,12 @@
 
   // ========================================================================
   // GraphQL Query - fetches all page content in a single request
+  // SYNC: When changing fields, update BOTH js/cms.js and hygraph/build.js
   // ========================================================================
 
   var QUERY = '{\n' +
     '  heroSections(first: 1, stage: PUBLISHED) {\n' +
+    '    id\n' +
     '    heading\n' +
     '    subtitle\n' +
     '    primaryCtaText\n' +
@@ -32,12 +34,14 @@
     '    }\n' +
     '  }\n' +
     '  socialProofStats(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    value\n' +
     '    suffix\n' +
     '    prefix\n' +
     '    label\n' +
     '  }\n' +
     '  whyStagingSections(first: 1, stage: PUBLISHED) {\n' +
+    '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '    paragraphs\n' +
@@ -49,6 +53,7 @@
     '    }\n' +
     '  }\n' +
     '  services(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    title\n' +
     '    description\n' +
     '    image {\n' +
@@ -56,6 +61,7 @@
     '    }\n' +
     '  }\n' +
     '  portfolioItems(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    label\n' +
     '    beforeImage {\n' +
     '      url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}})\n' +
@@ -65,10 +71,12 @@
     '    }\n' +
     '  }\n' +
     '  resultsSections(first: 1, stage: PUBLISHED) {\n' +
+    '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '  }\n' +
     '  resultStats(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    value\n' +
     '    suffix\n' +
     '    prefix\n' +
@@ -76,16 +84,19 @@
     '    description\n' +
     '  }\n' +
     '  howItWorksSteps(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    title\n' +
     '    description\n' +
     '  }\n' +
     '  testimonials(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    quote\n' +
     '    authorName\n' +
     '    authorRole\n' +
     '    stars\n' +
     '  }\n' +
     '  aboutSections(first: 1, stage: PUBLISHED) {\n' +
+    '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '    paragraphs\n' +
@@ -95,14 +106,17 @@
     '    }\n' +
     '  }\n' +
     '  serviceAreas(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    region\n' +
     '    areas\n' +
     '  }\n' +
     '  faqs(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '    id\n' +
     '    question\n' +
     '    answer\n' +
     '  }\n' +
     '  contactInfos(first: 1, stage: PUBLISHED) {\n' +
+    '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '    description\n' +
@@ -114,6 +128,7 @@
     '    pinterestUrl\n' +
     '  }\n' +
     '  siteSettingsEntries(first: 1, stage: PUBLISHED) {\n' +
+    '    id\n' +
     '    siteName\n' +
     '    tagline\n' +
     '    footerDescription\n' +
@@ -166,6 +181,12 @@
   }
 
   function fetchCMS() {
+    // In preview mode (Hygraph sidebar or ?preview=true), always fetch live
+    // content so editors see current data, not stale build-time snapshots.
+    var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
+                    window.self !== window.top;
+    if (isPreview) return fetchFromAPI();
+
     // In deployed builds, cms-data.json is generated at build time — use it
     // to avoid any runtime API calls. Falls back to live API in local dev.
     return fetch('/cms-data.json')
@@ -236,6 +257,12 @@
     return 'tel:+' + phone.replace(/\D/g, '');
   }
 
+  function setEditAttr(el, entryId, fieldApiId) {
+    if (!el || !entryId) return;
+    el.setAttribute('data-hygraph-entry-id', entryId);
+    if (fieldApiId) el.setAttribute('data-hygraph-field-api-id', fieldApiId);
+  }
+
   // ========================================================================
   // Content hydration functions
   // ========================================================================
@@ -246,13 +273,16 @@
 
     if (hero.heading) {
       setText('.hero-content h1', hero.heading);
+      setEditAttr(document.querySelector('.hero-content h1'), hero.id, 'heading');
     }
     if (hero.subtitle) {
       setText('.hero-subtitle', hero.subtitle);
+      setEditAttr(document.querySelector('.hero-subtitle'), hero.id, 'subtitle');
     }
     if (hero.primaryCtaText) {
       var primaryBtn = document.querySelector('.hero-ctas .btn--primary');
       if (primaryBtn) primaryBtn.textContent = hero.primaryCtaText;
+      setEditAttr(primaryBtn, hero.id, 'primaryCtaText');
     }
     if (hero.primaryCtaLink) {
       setAttr('.hero-ctas .btn--primary', 'href', hero.primaryCtaLink);
@@ -260,6 +290,7 @@
     if (hero.secondaryCtaText) {
       var secondaryBtn = document.querySelector('.hero-ctas .btn--outline');
       if (secondaryBtn) secondaryBtn.textContent = hero.secondaryCtaText;
+      setEditAttr(secondaryBtn, hero.id, 'secondaryCtaText');
     }
     if (hero.secondaryCtaLink) {
       setAttr('.hero-ctas .btn--outline', 'href', hero.secondaryCtaLink);
@@ -285,11 +316,23 @@
 
       var div = document.createElement('div');
       div.className = 'stat-item';
-      div.innerHTML =
-        '<div class="stat-number" data-target="' + stat.value + '"' +
-        (format ? ' data-format="' + format + '"' : '') +
-        '>0</div>' +
-        '<div class="stat-label">' + stat.label + '</div>';
+      setEditAttr(div, stat.id);
+
+      // Note: innerHTML here uses CMS-managed content from Hygraph (trusted source)
+      var numDiv = document.createElement('div');
+      numDiv.className = 'stat-number';
+      numDiv.setAttribute('data-target', stat.value);
+      if (format) numDiv.setAttribute('data-format', format);
+      numDiv.textContent = '0';
+      setEditAttr(numDiv, stat.id, 'value');
+
+      var labelDiv = document.createElement('div');
+      labelDiv.className = 'stat-label';
+      labelDiv.textContent = stat.label;
+      setEditAttr(labelDiv, stat.id, 'label');
+
+      div.appendChild(numDiv);
+      div.appendChild(labelDiv);
       grid.appendChild(div);
     });
 
@@ -301,12 +344,19 @@
     if (!data) return;
     var section = data[0] || data;
 
-    if (section.eyebrow) setText('.why-staging .eyebrow', section.eyebrow);
-    if (section.heading) setText('.why-staging h2', section.heading);
+    if (section.eyebrow) {
+      setText('.why-staging .eyebrow', section.eyebrow);
+      setEditAttr(document.querySelector('.why-staging .eyebrow'), section.id, 'eyebrow');
+    }
+    if (section.heading) {
+      setText('.why-staging h2', section.heading);
+      setEditAttr(document.querySelector('.why-staging h2'), section.id, 'heading');
+    }
 
     if (section.paragraphs && section.paragraphs.length) {
       var textContainer = document.querySelector('.why-staging-text');
       if (textContainer) {
+        setEditAttr(textContainer, section.id, 'paragraphs');
         var existingParagraphs = textContainer.querySelectorAll(':scope > p:not(.eyebrow)');
         existingParagraphs.forEach(function (p, i) {
           if (section.paragraphs[i]) p.textContent = section.paragraphs[i];
@@ -317,6 +367,7 @@
     if (section.bulletPoints && section.bulletPoints.length) {
       var pointsContainer = document.querySelector('.why-staging-points');
       if (pointsContainer) {
+        setEditAttr(pointsContainer, section.id, 'bulletPoints');
         pointsContainer.innerHTML = '';
         section.bulletPoints.forEach(function (point) {
           var div = document.createElement('div');
@@ -344,16 +395,33 @@
       var card = document.createElement('div');
       card.className = 'service-card reveal';
       card.setAttribute('data-delay', delay);
+      setEditAttr(card, service.id);
 
       var imgUrl = service.image ? service.image.url : '';
-      card.innerHTML =
-        '<div class="service-card-image">' +
-        '<img src="' + imgUrl + '" alt="' + service.title + '" loading="lazy" width="600" height="400">' +
-        '</div>' +
-        '<div class="service-card-body">' +
-        '<h3>' + service.title + '</h3>' +
-        '<p>' + service.description + '</p>' +
-        '</div>';
+
+      var imgWrap = document.createElement('div');
+      imgWrap.className = 'service-card-image';
+      var img = document.createElement('img');
+      img.src = imgUrl;
+      img.alt = service.title;
+      img.loading = 'lazy';
+      img.width = 600;
+      img.height = 400;
+      imgWrap.appendChild(img);
+
+      var body = document.createElement('div');
+      body.className = 'service-card-body';
+      var h3 = document.createElement('h3');
+      h3.textContent = service.title;
+      setEditAttr(h3, service.id, 'title');
+      var p = document.createElement('p');
+      p.textContent = service.description;
+      setEditAttr(p, service.id, 'description');
+      body.appendChild(h3);
+      body.appendChild(p);
+
+      card.appendChild(imgWrap);
+      card.appendChild(body);
       grid.appendChild(card);
     });
 
@@ -374,6 +442,7 @@
       var wrapper = document.createElement('div');
       wrapper.className = 'reveal reveal--visible';
       wrapper.setAttribute('data-delay', delay);
+      setEditAttr(wrapper, item.id);
 
       var beforeUrl = item.beforeImage ? item.beforeImage.url : '';
       var afterUrl = item.afterImage ? item.afterImage.url : '';
@@ -394,6 +463,10 @@
         '</div>' +
         '<p class="portfolio-item-label">' + item.label + '</p>';
       grid.appendChild(wrapper);
+
+      // Tag label element after innerHTML is set
+      var labelEl = wrapper.querySelector('.portfolio-item-label');
+      setEditAttr(labelEl, item.id, 'label');
     });
 
     // Re-initialize sliders
@@ -404,8 +477,14 @@
     if (!data) return;
     var section = data[0] || data;
 
-    if (section.eyebrow) setText('.results .eyebrow', section.eyebrow);
-    if (section.heading) setText('.results h2', section.heading);
+    if (section.eyebrow) {
+      setText('.results .eyebrow', section.eyebrow);
+      setEditAttr(document.querySelector('.results .eyebrow'), section.id, 'eyebrow');
+    }
+    if (section.heading) {
+      setText('.results h2', section.heading);
+      setEditAttr(document.querySelector('.results h2'), section.id, 'heading');
+    }
 
     if (section.stats && section.stats.length) {
       var grid = document.querySelector('.results-grid');
@@ -417,6 +496,7 @@
         var div = document.createElement('div');
         div.className = 'result-item reveal reveal--visible';
         div.setAttribute('data-delay', delay);
+        setEditAttr(div, stat.id);
 
         var format = '';
         var parts = [];
@@ -441,6 +521,12 @@
           '<div class="result-label">' + stat.label + '</div>' +
           (stat.description ? '<div class="result-desc">' + stat.description + '</div>' : '');
         grid.appendChild(div);
+
+        // Tag inner elements after innerHTML
+        var numEl = div.querySelector('.result-number');
+        setEditAttr(numEl, stat.id, 'value');
+        var labelEl = div.querySelector('.result-label');
+        setEditAttr(labelEl, stat.id, 'label');
       });
 
       if (window._reobserveCounters) window._reobserveCounters();
@@ -457,10 +543,23 @@
       var div = document.createElement('div');
       div.className = 'step reveal reveal--visible';
       div.setAttribute('data-delay', i + 1);
-      div.innerHTML =
-        '<div class="step-number">' + (i + 1) + '</div>' +
-        '<h3>' + step.title + '</h3>' +
-        '<p>' + step.description + '</p>';
+      setEditAttr(div, step.id);
+
+      var numDiv = document.createElement('div');
+      numDiv.className = 'step-number';
+      numDiv.textContent = i + 1;
+
+      var h3 = document.createElement('h3');
+      h3.textContent = step.title;
+      setEditAttr(h3, step.id, 'title');
+
+      var p = document.createElement('p');
+      p.textContent = step.description;
+      setEditAttr(p, step.id, 'description');
+
+      div.appendChild(numDiv);
+      div.appendChild(h3);
+      div.appendChild(p);
       container.appendChild(div);
     });
   }
@@ -476,6 +575,7 @@
       var card = document.createElement('div');
       card.className = 'testimonial-card reveal reveal--visible';
       card.setAttribute('data-delay', delay);
+      setEditAttr(card, t.id);
       card.innerHTML =
         '<div class="testimonial-quote-mark" aria-hidden="true">&ldquo;</div>' +
         '<p class="testimonial-text">' + t.quote + '</p>' +
@@ -485,6 +585,10 @@
         '<p class="testimonial-author">' + t.authorName + '</p>' +
         '<p class="testimonial-role">' + t.authorRole + '</p>';
       grid.appendChild(card);
+
+      // Tag inner elements after innerHTML
+      setEditAttr(card.querySelector('.testimonial-text'), t.id, 'quote');
+      setEditAttr(card.querySelector('.testimonial-author'), t.id, 'authorName');
     });
 
     // Update dots
@@ -507,12 +611,19 @@
     if (!data) return;
     var section = data[0] || data;
 
-    if (section.eyebrow) setText('.about .eyebrow', section.eyebrow);
-    if (section.heading) setText('.about h2', section.heading);
+    if (section.eyebrow) {
+      setText('.about .eyebrow', section.eyebrow);
+      setEditAttr(document.querySelector('.about .eyebrow'), section.id, 'eyebrow');
+    }
+    if (section.heading) {
+      setText('.about h2', section.heading);
+      setEditAttr(document.querySelector('.about h2'), section.id, 'heading');
+    }
 
     if (section.paragraphs && section.paragraphs.length) {
       var textContainer = document.querySelector('.about-text');
       if (textContainer) {
+        setEditAttr(textContainer, section.id, 'paragraphs');
         var existingParagraphs = textContainer.querySelectorAll(':scope > p');
         existingParagraphs.forEach(function (p, i) {
           if (section.paragraphs[i]) p.textContent = section.paragraphs[i];
@@ -523,6 +634,7 @@
     if (section.credentials && section.credentials.length) {
       var credsContainer = document.querySelector('.about-credentials');
       if (credsContainer) {
+        setEditAttr(credsContainer, section.id, 'credentials');
         credsContainer.innerHTML = '';
         section.credentials.forEach(function (cred) {
           var div = document.createElement('div');
@@ -548,13 +660,24 @@
     areas.forEach(function (area) {
       var div = document.createElement('div');
       div.className = 'area-region';
-      var listItems = '';
+      setEditAttr(div, area.id);
+
+      var h3 = document.createElement('h3');
+      h3.textContent = area.region;
+      setEditAttr(h3, area.id, 'region');
+
+      var ul = document.createElement('ul');
+      setEditAttr(ul, area.id, 'areas');
       if (area.areas && area.areas.length) {
         area.areas.forEach(function (a) {
-          listItems += '<li>' + a + '</li>';
+          var li = document.createElement('li');
+          li.textContent = a;
+          ul.appendChild(li);
         });
       }
-      div.innerHTML = '<h3>' + area.region + '</h3><ul>' + listItems + '</ul>';
+
+      div.appendChild(h3);
+      div.appendChild(ul);
       container.appendChild(div);
     });
   }
@@ -568,6 +691,7 @@
     faqs.forEach(function (faq) {
       var details = document.createElement('details');
       details.className = 'faq-item reveal reveal--visible';
+      setEditAttr(details, faq.id);
       details.innerHTML =
         '<summary>' +
         faq.question +
@@ -575,6 +699,10 @@
         '</summary>' +
         '<div class="faq-answer"><p>' + faq.answer + '</p></div>';
       list.appendChild(details);
+
+      // Tag inner elements after innerHTML
+      setEditAttr(details.querySelector('summary'), faq.id, 'question');
+      setEditAttr(details.querySelector('.faq-answer'), faq.id, 'answer');
     });
 
     // Re-bind accordion behavior
@@ -595,12 +723,21 @@
 
     if (info.eyebrow) {
       var eyebrowEl = document.querySelector('.contact-info .eyebrow');
-      if (eyebrowEl) eyebrowEl.textContent = info.eyebrow;
+      if (eyebrowEl) {
+        eyebrowEl.textContent = info.eyebrow;
+        setEditAttr(eyebrowEl, info.id, 'eyebrow');
+      }
     }
-    if (info.heading) setText('.contact-info h2', info.heading);
+    if (info.heading) {
+      setText('.contact-info h2', info.heading);
+      setEditAttr(document.querySelector('.contact-info h2'), info.id, 'heading');
+    }
     if (info.description) {
       var descP = document.querySelector('.contact-info > p');
-      if (descP) descP.textContent = info.description;
+      if (descP) {
+        descP.textContent = info.description;
+        setEditAttr(descP, info.id, 'description');
+      }
     }
 
     if (info.phone) {
@@ -626,6 +763,7 @@
           if (node.nodeType === 3) phoneTextNodes.push(node);
         });
         if (phoneTextNodes.length) phoneTextNodes[phoneTextNodes.length - 1].textContent = '\n                ' + phoneDisplay + '\n              ';
+        setEditAttr(contactPhoneLink, info.id, 'phone');
       }
 
       // Mobile nav phone
@@ -645,6 +783,7 @@
           if (node.nodeType === 3) emailTextNodes.push(node);
         });
         if (emailTextNodes.length) emailTextNodes[emailTextNodes.length - 1].textContent = '\n                ' + info.email + '\n              ';
+        setEditAttr(emailLink, info.id, 'email');
       }
     }
 
@@ -669,10 +808,12 @@
     if (settings.footerDescription) {
       var footerDesc = document.querySelector('.footer-brand > p');
       if (footerDesc) footerDesc.textContent = settings.footerDescription;
+      setEditAttr(footerDesc, settings.id, 'footerDescription');
     }
     if (settings.formResponseNote) {
       var formNote = document.querySelector('.form-note');
       if (formNote) formNote.textContent = settings.formResponseNote;
+      setEditAttr(formNote, settings.id, 'formResponseNote');
     }
   }
 
@@ -689,7 +830,7 @@
       if (data.whyStagingSections) hydrateWhyStaging(data.whyStagingSections);
       if (data.services) hydrateServices(data.services);
       if (data.portfolioItems) hydratePortfolio(data.portfolioItems);
-      if (data.resultsSections) hydrateResults(Object.assign({}, data.resultsSections[0], { stats: data.resultStats }));
+      if (data.resultsSections && data.resultsSections.length) hydrateResults(Object.assign({}, data.resultsSections[0], { stats: data.resultStats }));
       if (data.howItWorksSteps) hydrateHowItWorks(data.howItWorksSteps);
       if (data.testimonials) hydrateTestimonials(data.testimonials);
       if (data.aboutSections) hydrateAbout(data.aboutSections);
