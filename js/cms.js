@@ -15,7 +15,14 @@
 
   var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
                   window.self !== window.top;
-  var endpoint = (isPreview && CMS_CONFIG.previewEndpoint) || CMS_CONFIG.endpoint;
+
+  // In preview mode, use the regular API endpoint (not CDN) for DRAFT queries.
+  // Derive it automatically from the CDN URL if previewEndpoint isn't configured.
+  var endpoint = CMS_CONFIG.endpoint;
+  if (isPreview) {
+    endpoint = CMS_CONFIG.previewEndpoint ||
+      endpoint.replace(/^(https:\/\/)(.+)\.cdn\.hygraph\.com\/content\//, '$1api-$2.hygraph.com/v2/');
+  }
 
   // ========================================================================
   // GraphQL Query - fetches all page content in a single request
