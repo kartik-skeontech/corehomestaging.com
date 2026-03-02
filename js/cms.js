@@ -14,14 +14,18 @@
   }
 
   var endpoint = CMS_CONFIG.endpoint;
+  var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
+                  window.self !== window.top;
 
   // ========================================================================
   // GraphQL Query - fetches all page content in a single request
   // SYNC: When changing fields, update BOTH js/cms.js and hygraph/build.js
   // ========================================================================
 
+  var STAGE = isPreview ? 'DRAFT' : 'PUBLISHED';
+
   var QUERY = '{\n' +
-    '  heroSections(first: 1, stage: PUBLISHED) {\n' +
+    '  heroSections(first: 1, stage: ' + STAGE + ') {\n' +
     '    id\n' +
     '    heading\n' +
     '    subtitle\n' +
@@ -33,14 +37,14 @@
     '      url(transformation: {image: {resize: {width: 1920, height: 1080, fit: crop}}})\n' +
     '    }\n' +
     '  }\n' +
-    '  socialProofStats(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  socialProofStats(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    value\n' +
     '    suffix\n' +
     '    prefix\n' +
     '    label\n' +
     '  }\n' +
-    '  whyStagingSections(first: 1, stage: PUBLISHED) {\n' +
+    '  whyStagingSections(first: 1, stage: ' + STAGE + ') {\n' +
     '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
@@ -52,7 +56,7 @@
     '      url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}})\n' +
     '    }\n' +
     '  }\n' +
-    '  services(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  services(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    title\n' +
     '    description\n' +
@@ -60,7 +64,7 @@
     '      url(transformation: {image: {resize: {width: 600, height: 400, fit: crop}}})\n' +
     '    }\n' +
     '  }\n' +
-    '  portfolioItems(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  portfolioItems(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    label\n' +
     '    beforeImage {\n' +
@@ -70,12 +74,12 @@
     '      url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}})\n' +
     '    }\n' +
     '  }\n' +
-    '  resultsSections(first: 1, stage: PUBLISHED) {\n' +
+    '  resultsSections(first: 1, stage: ' + STAGE + ') {\n' +
     '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
     '  }\n' +
-    '  resultStats(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  resultStats(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    value\n' +
     '    suffix\n' +
@@ -83,19 +87,19 @@
     '    label\n' +
     '    description\n' +
     '  }\n' +
-    '  howItWorksSteps(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  howItWorksSteps(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    title\n' +
     '    description\n' +
     '  }\n' +
-    '  testimonials(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  testimonials(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    quote\n' +
     '    authorName\n' +
     '    authorRole\n' +
     '    stars\n' +
     '  }\n' +
-    '  aboutSections(first: 1, stage: PUBLISHED) {\n' +
+    '  aboutSections(first: 1, stage: ' + STAGE + ') {\n' +
     '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
@@ -105,17 +109,17 @@
     '      url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}})\n' +
     '    }\n' +
     '  }\n' +
-    '  serviceAreas(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  serviceAreas(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    region\n' +
     '    areas\n' +
     '  }\n' +
-    '  faqs(stage: PUBLISHED, orderBy: order_ASC) {\n' +
+    '  faqs(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
     '    id\n' +
     '    question\n' +
     '    answer\n' +
     '  }\n' +
-    '  contactInfos(first: 1, stage: PUBLISHED) {\n' +
+    '  contactInfos(first: 1, stage: ' + STAGE + ') {\n' +
     '    id\n' +
     '    eyebrow\n' +
     '    heading\n' +
@@ -127,7 +131,7 @@
     '    facebookUrl\n' +
     '    pinterestUrl\n' +
     '  }\n' +
-    '  siteSettingsEntries(first: 1, stage: PUBLISHED) {\n' +
+    '  siteSettingsEntries(first: 1, stage: ' + STAGE + ') {\n' +
     '    id\n' +
     '    siteName\n' +
     '    tagline\n' +
@@ -143,9 +147,6 @@
   var CACHE_KEY = 'cms_cache_v1';
   var CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-  var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
-                  window.self !== window.top;
-
   function fetchFromAPI() {
     // Skip cache in preview mode — editors need fresh data
     if (!isPreview) {
@@ -160,9 +161,14 @@
       } catch (e) {}
     }
 
+    var headers = { 'Content-Type': 'application/json' };
+    if (isPreview && CMS_CONFIG.previewToken) {
+      headers['Authorization'] = 'Bearer ' + CMS_CONFIG.previewToken;
+    }
+
     return fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({ query: QUERY })
     })
       .then(function (res) {

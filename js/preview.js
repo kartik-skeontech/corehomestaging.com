@@ -27,7 +27,7 @@
 
     var preview = new window.HygraphPreviewSDK.Preview({
       endpoint: CMS_CONFIG.endpoint,
-      debug: false,
+      debug: true,
       sync: { fieldUpdate: true }
     });
 
