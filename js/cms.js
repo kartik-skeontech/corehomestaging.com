@@ -143,17 +143,22 @@
   var CACHE_KEY = 'cms_cache_v1';
   var CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+  var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
+                  window.self !== window.top;
+
   function fetchFromAPI() {
-    // Serve from localStorage cache if still fresh
-    try {
-      var cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        var entry = JSON.parse(cached);
-        if (Date.now() - entry.ts < CACHE_TTL) {
-          return Promise.resolve(entry.data);
+    // Skip cache in preview mode — editors need fresh data
+    if (!isPreview) {
+      try {
+        var cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          var entry = JSON.parse(cached);
+          if (Date.now() - entry.ts < CACHE_TTL) {
+            return Promise.resolve(entry.data);
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
 
     return fetch(endpoint, {
       method: 'POST',
@@ -183,8 +188,6 @@
   function fetchCMS() {
     // In preview mode (Hygraph sidebar or ?preview=true), always fetch live
     // content so editors see current data, not stale build-time snapshots.
-    var isPreview = window.location.search.indexOf('preview=true') !== -1 ||
-                    window.self !== window.top;
     if (isPreview) return fetchFromAPI();
 
     // In deployed builds, cms-data.json is generated at build time — use it
@@ -821,9 +824,8 @@
   // Main: fetch and hydrate
   // ========================================================================
 
-  fetchCMS().then(function (data) {
+  function hydrateAll(data) {
     if (!data) return;
-
     try {
       if (data.heroSections) hydrateHero(data.heroSections);
       if (data.socialProofStats) hydrateSocialProof(data.socialProofStats);
@@ -841,5 +843,12 @@
     } catch (err) {
       console.warn('CMS hydration error:', err);
     }
-  });
+  }
+
+  fetchCMS().then(hydrateAll);
+
+  // Expose re-hydration for preview mode (used by preview.js on save events)
+  window._cmsRehydrate = function () {
+    fetchFromAPI().then(hydrateAll);
+  };
 })();
