@@ -25,127 +25,20 @@
   }
 
   // ========================================================================
-  // GraphQL Query - fetches all page content in a single request
+  // GraphQL Queries — split into small batches to avoid concurrent op limit
   // SYNC: When changing fields, update BOTH js/cms.js and hygraph/build.js
   // ========================================================================
 
   var STAGE = isPreview ? 'DRAFT' : 'PUBLISHED';
 
-  var QUERY = '{\n' +
-    '  heroSections(first: 1, stage: ' + STAGE + ') {\n' +
-    '    id\n' +
-    '    heading\n' +
-    '    subtitle\n' +
-    '    primaryCtaText\n' +
-    '    primaryCtaLink\n' +
-    '    secondaryCtaText\n' +
-    '    secondaryCtaLink\n' +
-    '    backgroundImage {\n' +
-    '      url(transformation: {image: {resize: {width: 1920, height: 1080, fit: crop}}})\n' +
-    '    }\n' +
-    '  }\n' +
-    '  socialProofStats(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    value\n' +
-    '    suffix\n' +
-    '    prefix\n' +
-    '    label\n' +
-    '  }\n' +
-    '  whyStagingSections(first: 1, stage: ' + STAGE + ') {\n' +
-    '    id\n' +
-    '    eyebrow\n' +
-    '    heading\n' +
-    '    paragraphs\n' +
-    '    bulletPoints\n' +
-    '    ctaText\n' +
-    '    ctaLink\n' +
-    '    image {\n' +
-    '      url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}})\n' +
-    '    }\n' +
-    '  }\n' +
-    '  services(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    title\n' +
-    '    description\n' +
-    '    image {\n' +
-    '      url(transformation: {image: {resize: {width: 600, height: 400, fit: crop}}})\n' +
-    '    }\n' +
-    '  }\n' +
-    '  portfolioItems(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    label\n' +
-    '    beforeImage {\n' +
-    '      url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}})\n' +
-    '    }\n' +
-    '    afterImage {\n' +
-    '      url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}})\n' +
-    '    }\n' +
-    '  }\n' +
-    '  resultsSections(first: 1, stage: ' + STAGE + ') {\n' +
-    '    id\n' +
-    '    eyebrow\n' +
-    '    heading\n' +
-    '  }\n' +
-    '  resultStats(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    value\n' +
-    '    suffix\n' +
-    '    prefix\n' +
-    '    label\n' +
-    '    description\n' +
-    '  }\n' +
-    '  howItWorksSteps(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    title\n' +
-    '    description\n' +
-    '  }\n' +
-    '  testimonials(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    quote\n' +
-    '    authorName\n' +
-    '    authorRole\n' +
-    '    stars\n' +
-    '  }\n' +
-    '  aboutSections(first: 1, stage: ' + STAGE + ') {\n' +
-    '    id\n' +
-    '    eyebrow\n' +
-    '    heading\n' +
-    '    paragraphs\n' +
-    '    credentials\n' +
-    '    image {\n' +
-    '      url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}})\n' +
-    '    }\n' +
-    '  }\n' +
-    '  serviceAreas(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    region\n' +
-    '    areas\n' +
-    '  }\n' +
-    '  faqs(stage: ' + STAGE + ', orderBy: order_ASC) {\n' +
-    '    id\n' +
-    '    question\n' +
-    '    answer\n' +
-    '  }\n' +
-    '  contactInfos(first: 1, stage: ' + STAGE + ') {\n' +
-    '    id\n' +
-    '    eyebrow\n' +
-    '    heading\n' +
-    '    description\n' +
-    '    phone\n' +
-    '    email\n' +
-    '    address\n' +
-    '    instagramUrl\n' +
-    '    facebookUrl\n' +
-    '    pinterestUrl\n' +
-    '  }\n' +
-    '  siteSettingsEntries(first: 1, stage: ' + STAGE + ') {\n' +
-    '    id\n' +
-    '    siteName\n' +
-    '    tagline\n' +
-    '    footerDescription\n' +
-    '    formResponseNote\n' +
-    '  }\n' +
-    '}';
+  var QUERIES = [
+    '{ heroSections(first: 1, stage: ' + STAGE + ') { id heading subtitle primaryCtaText primaryCtaLink secondaryCtaText secondaryCtaLink backgroundImage { url(transformation: {image: {resize: {width: 1920, height: 1080, fit: crop}}}) } } socialProofStats(stage: ' + STAGE + ', orderBy: order_ASC) { id value suffix prefix label } }',
+    '{ whyStagingSections(first: 1, stage: ' + STAGE + ') { id eyebrow heading paragraphs bulletPoints ctaText ctaLink image { url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}}) } } services(stage: ' + STAGE + ', orderBy: order_ASC) { id title description image { url(transformation: {image: {resize: {width: 600, height: 400, fit: crop}}}) } } }',
+    '{ portfolioItems(stage: ' + STAGE + ', orderBy: order_ASC) { id label beforeImage { url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}}) } afterImage { url(transformation: {image: {resize: {width: 800, height: 600, fit: crop}}}) } } resultsSections(first: 1, stage: ' + STAGE + ') { id eyebrow heading } resultStats(stage: ' + STAGE + ', orderBy: order_ASC) { id value suffix prefix label description } }',
+    '{ howItWorksSteps(stage: ' + STAGE + ', orderBy: order_ASC) { id title description } testimonials(stage: ' + STAGE + ', orderBy: order_ASC) { id quote authorName authorRole stars } }',
+    '{ aboutSections(first: 1, stage: ' + STAGE + ') { id eyebrow heading paragraphs credentials image { url(transformation: {image: {resize: {width: 600, height: 750, fit: crop}}}) } } serviceAreas(stage: ' + STAGE + ', orderBy: order_ASC) { id region areas } }',
+    '{ faqs(stage: ' + STAGE + ', orderBy: order_ASC) { id question answer } contactInfos(first: 1, stage: ' + STAGE + ') { id eyebrow heading description phone email address instagramUrl facebookUrl pinterestUrl } siteSettingsEntries(first: 1, stage: ' + STAGE + ') { id siteName tagline footerDescription formResponseNote } }'
+  ];
 
   // ========================================================================
   // Fetch from Hygraph
@@ -173,36 +66,47 @@
       headers['Authorization'] = 'Bearer ' + CMS_CONFIG.previewToken;
     }
 
-    var body = JSON.stringify({ query: QUERY });
-
-    function attempt(retries) {
+    function runQuery(query) {
       return fetch(endpoint, {
         method: 'POST',
         headers: headers,
-        body: body
+        body: JSON.stringify({ query: query })
       })
         .then(function (res) {
-          if (res.status === 429 && retries > 0) {
-            return new Promise(function (resolve) {
-              setTimeout(resolve, 2000);
-            }).then(function () { return attempt(retries - 1); });
-          }
           if (!res.ok) throw new Error('CMS fetch failed: ' + res.status);
           return res.json();
         })
         .then(function (json) {
           if (json.errors) {
             console.warn('Hygraph query errors:', json.errors);
-            return null;
+            return {};
           }
-          try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: json.data }));
-          } catch (e) {}
-          return json.data;
+          return json.data || {};
         });
     }
 
-    return attempt(2).catch(function (err) {
+    // Run queries sequentially with a short pause to stay under concurrency limit
+    var data = {};
+    var chain = Promise.resolve();
+    QUERIES.forEach(function (q, i) {
+      chain = chain.then(function () {
+        return runQuery(q);
+      }).then(function (result) {
+        var keys = Object.keys(result);
+        for (var k = 0; k < keys.length; k++) data[keys[k]] = result[keys[k]];
+        if (i < QUERIES.length - 1) {
+          return new Promise(function (r) { setTimeout(r, 300); });
+        }
+      });
+    });
+
+    return chain.then(function () {
+      if (Object.keys(data).length === 0) return null;
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
+      } catch (e) {}
+      return data;
+    }).catch(function (err) {
       console.warn('CMS not available, using static content:', err.message);
       return null;
     });
