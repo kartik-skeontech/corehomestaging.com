@@ -319,7 +319,13 @@
     var grid = document.querySelector('.services-grid');
     if (!grid) return;
 
-    grid.innerHTML = '';
+    // Save original image srcs from static HTML as fallbacks
+    var origImgs = [];
+    grid.querySelectorAll('.service-card-image img').forEach(function (el) {
+      origImgs.push(el.getAttribute('src') || '');
+    });
+
+    while (grid.firstChild) grid.removeChild(grid.firstChild);
     services.forEach(function (service, i) {
       var delay = (i % 3) + 1;
       var card = document.createElement('div');
@@ -327,12 +333,10 @@
       card.setAttribute('data-delay', delay);
       setEditAttr(card, service.id);
 
-      var imgUrl = service.image ? service.image.url : '';
-
       var imgWrap = document.createElement('div');
       imgWrap.className = 'service-card-image';
       var img = document.createElement('img');
-      img.src = imgUrl;
+      img.src = (service.image && service.image.url) ? service.image.url : (origImgs[i] || '');
       img.alt = service.title;
       img.loading = 'lazy';
       img.width = 600;
@@ -366,7 +370,17 @@
     var grid = document.querySelector('.portfolio-grid');
     if (!grid) return;
 
-    grid.innerHTML = '';
+    // Save original before/after image srcs from static HTML as fallbacks
+    var origBefore = [];
+    var origAfter = [];
+    grid.querySelectorAll('.ba-slider').forEach(function (slider) {
+      var b = slider.querySelector('.ba-before');
+      var a = slider.querySelector('.ba-after');
+      origBefore.push(b ? b.getAttribute('src') || '' : '');
+      origAfter.push(a ? a.getAttribute('src') || '' : '');
+    });
+
+    while (grid.firstChild) grid.removeChild(grid.firstChild);
     items.forEach(function (item, i) {
       var delay = (i % 2) + 1;
       var wrapper = document.createElement('div');
@@ -374,8 +388,8 @@
       wrapper.setAttribute('data-delay', delay);
       setEditAttr(wrapper, item.id);
 
-      var beforeUrl = item.beforeImage ? item.beforeImage.url : '';
-      var afterUrl = item.afterImage ? item.afterImage.url : '';
+      var beforeUrl = (item.beforeImage && item.beforeImage.url) ? item.beforeImage.url : (origBefore[i] || '');
+      var afterUrl = (item.afterImage && item.afterImage.url) ? item.afterImage.url : (origAfter[i] || '');
 
       wrapper.innerHTML =
         '<div class="ba-slider" data-slider>' +
