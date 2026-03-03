@@ -173,29 +173,39 @@
       headers['Authorization'] = 'Bearer ' + CMS_CONFIG.previewToken;
     }
 
-    return fetch(endpoint, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({ query: QUERY })
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error('CMS fetch failed: ' + res.status);
-        return res.json();
+    var body = JSON.stringify({ query: QUERY });
+
+    function attempt(retries) {
+      return fetch(endpoint, {
+        method: 'POST',
+        headers: headers,
+        body: body
       })
-      .then(function (json) {
-        if (json.errors) {
-          console.warn('Hygraph query errors:', json.errors);
-          return null;
-        }
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: json.data }));
-        } catch (e) {}
-        return json.data;
-      })
-      .catch(function (err) {
-        console.warn('CMS not available, using static content:', err.message);
-        return null;
-      });
+        .then(function (res) {
+          if (res.status === 429 && retries > 0) {
+            return new Promise(function (resolve) {
+              setTimeout(resolve, 2000);
+            }).then(function () { return attempt(retries - 1); });
+          }
+          if (!res.ok) throw new Error('CMS fetch failed: ' + res.status);
+          return res.json();
+        })
+        .then(function (json) {
+          if (json.errors) {
+            console.warn('Hygraph query errors:', json.errors);
+            return null;
+          }
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: json.data }));
+          } catch (e) {}
+          return json.data;
+        });
+    }
+
+    return attempt(2).catch(function (err) {
+      console.warn('CMS not available, using static content:', err.message);
+      return null;
+    });
   }
 
   function fetchCMS() {
