@@ -27,6 +27,7 @@
 
     var preview = new window.HygraphPreviewSDK.Preview({
       endpoint: CMS_CONFIG.endpoint,
+      studioUrl: CMS_CONFIG.studioUrl,
       debug: false,
       sync: { fieldUpdate: true }
     });
